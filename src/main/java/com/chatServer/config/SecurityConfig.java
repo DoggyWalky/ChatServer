@@ -60,8 +60,10 @@ public class SecurityConfig {
         // 로그인 API, 회원가입 API는 토큰이 없는 상태에서 요청이 들어오기 때문에 모두 permitAll 설정을 한다.
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/favicon.ico").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/ws/**").permitAll()
+                        .requestMatchers("/chat/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET,"/**.css", "/**.js", "/**.png").permitAll()
                         .anyRequest().authenticated());
 
@@ -83,10 +85,13 @@ public class SecurityConfig {
 
         http
                 // JwtFilter를 addFilterBefore로 등록했던 JwtSecurityConfig 클래스도 적용해준다.
-                .apply(new JwtSecurityConfig(tokenProvider, refreshTokenProvider, redisService, hmacAndBase64));
+//                .apply(new JwtSecurityConfig(tokenProvider, refreshTokenProvider, redisService, hmacAndBase64));
+                .addFilterBefore(new JwtFilter(tokenProvider,refreshTokenProvider,redisService, hmacAndBase64),
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
     @Bean
     public WebSecurityCustomizer configure() {

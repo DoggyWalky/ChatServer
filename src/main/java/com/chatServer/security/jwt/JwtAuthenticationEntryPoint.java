@@ -23,6 +23,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         String jsonInString = mapper.writeValueAsString(ErrorResponse.of(ErrorCode.UNAUTHORIZED.name()));
 
         response.setContentType("application/json");
+        System.out.println("Authentication 불허");
 
         //유효한 토큰이 아닐 시 401
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

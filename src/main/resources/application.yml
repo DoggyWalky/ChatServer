@@ -1,25 +1,21 @@
-## API ?? ? SQL ? ??
+server:
+  port: 8081
 spring:
   jpa:
     properties:
       hibernate:
-        #        show_sql: true ?????? ?? ??
         format_sql: true
-## ?? ?? ?? ??
   main:
     allow-circular-references: true
-## Mysql ?? ??
     database: mysql
 
 
-## Mysql ?? ??
   datasource:
     url: ENC(ve8nX3UyUztK39L1bwLNSNpSIUFU6hijhPp/nLchG1bz/R0xWo65JMW1Q61dPzMlZHHItkFOq2jqunsAb1IQKDr8WOqKXArwbQjwhZmW1r/5rSMNLfgVG5Vqp0EG75Obujt+eMcMng4=)
     username: ENC(CRtDDOYA5iA58jbdUQN+Zw==)
     password: ENC(fc3Nv75og6+jpPgiFDF7TvRpABTMLK+v)
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-## redis ??
   data:
     redis:
       host: localhost
@@ -43,7 +39,11 @@ jwt:
 #    org.hibernate.SQL: debug
 #    org.hibernate.type: trace
 #    p6spy: DEBUG
-
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
 
 ## p6spy query logging
 decorator:
