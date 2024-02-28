@@ -1,6 +1,7 @@
 package com.chatServer.subscriber;
 
 import com.chatServer.chat.dto.ChatRoomMessage;
+import com.chatServer.chat.service.ChatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,9 @@ import org.springframework.stereotype.Component;
 public class ChatRoomSubscriber {
 
     private final ObjectMapper objectMapper;
+
+    private final ChatService chatService;
+
     private final SimpMessageSendingOperations messagingTemplate;
 
     /**
@@ -21,11 +25,13 @@ public class ChatRoomSubscriber {
     public void sendMessage(String publishMessage) {
         try {
             //ChatMessage 객체로 매핑
-            System.out.println("publishMessage");
-            System.out.println(publishMessage);
             ChatRoomMessage chatRoomMessage = objectMapper.readValue(publishMessage, ChatRoomMessage.class);
             System.out.println("chatRoom Message 도착");
             System.out.println(chatRoomMessage.toString());
+
+            // 채팅방 생성 로직
+            chatService.createChatRoom(chatRoomMessage);
+
             // 채팅방을 구독한 클라이언트에게 메시지 발송(Redis의 토픽에 메시지 발행 후 작업)
 //            messagingTemplate.convertAndSend("/sub/chat/room/"+chatRoomMessage.getRoomId(), chatRoomMessage);
         } catch (Exception e) {

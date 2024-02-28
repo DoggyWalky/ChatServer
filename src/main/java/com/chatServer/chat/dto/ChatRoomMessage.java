@@ -13,7 +13,8 @@ public class ChatRoomMessage {
 
     private Long senderId;
     private Long receiverId;
-    private Long ChatRoomId;
+    private Long chatRoomId;
+    private Long jobPostId;
     private Type type;
 
 }

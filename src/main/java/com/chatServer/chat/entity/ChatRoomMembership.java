@@ -29,4 +29,10 @@ public class ChatRoomMembership {
 
     @Column(name="left_at")
     private LocalDateTime leftAt;
+
+    public ChatRoomMembership(Member member, ChatRoom chatRoom) {
+        this.member = member;
+        this.chatRoom = chatRoom;
+        this.isVisible = true;
+    }
 }

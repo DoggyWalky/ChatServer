@@ -15,7 +15,20 @@ public class ChatRoom {
     @Column(name="room_id")
     private Long id;
 
+    @Column(name="jobpost_id")
+    private Long jobPostId;
+
     @Column(name="created_at")
     private LocalDateTime createdAt;
+
+    public ChatRoom(Long jobPostId) {
+        this.jobPostId = jobPostId;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
+
 
 }
