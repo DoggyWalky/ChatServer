@@ -27,23 +27,18 @@ jwt:
   refresh-token-validity-in-seconds: 2592000 #1209600 # 60 * 60 * 24 * 30 30? -> ?
 
 
-#logging:
-#  level:
-#    root: INFO
-#    com:
-#      amazonaws: DEBUG
-#      amazonaws.util.EC2MetadataUtils: ERROR
-#    org:
-#      springframework:
-#        web: DEBUG
-#    org.hibernate.SQL: debug
-#    org.hibernate.type: trace
-#    p6spy: DEBUG
 logging:
   level:
+    root: INFO
     org:
       springframework:
+        web:
+          socket: DEBUG
         security: DEBUG
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+    p6spy: DEBUG
+
 
 ## p6spy query logging
 decorator:

@@ -1,5 +1,6 @@
 package com.chatServer.subscriber;
 
+import com.chatServer.chat.dto.ChatMessage;
 import com.chatServer.chat.dto.ChatRoomMessage;
 import com.chatServer.chat.service.ChatService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,11 +30,14 @@ public class ChatRoomSubscriber {
             System.out.println("chatRoom Message 도착");
             System.out.println(chatRoomMessage.toString());
 
-            // 채팅방 생성 로직
-            chatService.createChatRoom(chatRoomMessage);
+            // 채팅방 생성 로직(채팅 생성 로직 포함)
+            ChatMessage message = chatService.createChatRoom(chatRoomMessage);
 
             // 채팅방을 구독한 클라이언트에게 메시지 발송(Redis의 토픽에 메시지 발행 후 작업)
-//            messagingTemplate.convertAndSend("/sub/chat/room/"+chatRoomMessage.getRoomId(), chatRoomMessage);
+            // 채팅 전송 로직
+            messagingTemplate.convertAndSend("/sub/chatRoom/renew"+chatRoomMessage.getReceiverId(),message);
+            messagingTemplate.convertAndSend("/sub/chatRoom/renew"+chatRoomMessage.getSenderId(),message);
+
         } catch (Exception e) {
             log.error("Exception {}", e);
         }

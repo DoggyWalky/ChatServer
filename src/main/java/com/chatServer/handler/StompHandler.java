@@ -1,14 +1,29 @@
 package com.chatServer.handler;
 
+import com.chatServer.constant.ConstantPool;
+import com.chatServer.exception.ErrorCode;
+import com.chatServer.exception.ErrorResponse;
+import com.chatServer.security.jwt.HmacAndBase64;
+import com.chatServer.security.jwt.RefreshTokenProvider;
+import com.chatServer.security.jwt.TokenProvider;
+import com.chatServer.security.redis.RedisService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-
+import org.springframework.util.StringUtils;
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.util.Optional;
 
@@ -17,6 +32,15 @@ import java.util.Optional;
 @Component
 public class StompHandler implements ChannelInterceptor {
 
+    private final TokenProvider tokenProvider;
+
+    private final RefreshTokenProvider refreshTokenProvider;
+
+    private final RedisService redisService;
+
+    private final HmacAndBase64 hmacAndBase64;
+
+    private final ObjectMapper objectMapper;
 
 
 
@@ -25,12 +49,47 @@ public class StompHandler implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-        if (StompCommand.CONNECT == accessor.getCommand()) { // websocket 연결요청
-            String hi = accessor.getFirstNativeHeader("hi");
-            String bye = accessor.getFirstNativeHeader("bye");
-            log.info("CONNECT {}", hi);
-            log.info("CONNECT {}", bye);
-        } else if (StompCommand.SUBSCRIBE == accessor.getCommand()) { // 채팅룸 구독요청
+        boolean isAuthenticated = validAuthenticate(accessor);
+        if (StompCommand.DISCONNECT != accessor.getCommand() && !isAuthenticated) {
+            String renewToken = null;
+            try {
+                renewToken = returnValidRefreshAuthenticate(accessor);
+            } catch (Exception e) {
+                log.info("StompHandler Crypt 에러 발생 {} :", e);
+            } finally {
+                ErrorResponse errorResponse = ErrorResponse.of(ErrorCode.UNAUTHORIZED.name());
+                if (renewToken != null) {
+                    try {
+                        String jsonErrorResponse = objectMapper.writeValueAsString(errorResponse);
+                        SimpMessageHeaderAccessor errorAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
+                        errorAccessor.setSessionId(accessor.getSessionId());
+                        errorAccessor.setLeaveMutable(true);
+                        errorAccessor.setHeader(ConstantPool.AUTHORIZATION_HEADER, renewToken);
+                        return MessageBuilder.createMessage(jsonErrorResponse.getBytes(), errorAccessor.getMessageHeaders());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                } else {
+                    try {
+                        String jsonErrorResponse = objectMapper.writeValueAsString(errorResponse);
+                        SimpMessageHeaderAccessor errorAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
+                        errorAccessor.setSessionId(accessor.getSessionId());
+                        errorAccessor.setLeaveMutable(true);
+                        return MessageBuilder.createMessage(jsonErrorResponse.getBytes(), errorAccessor.getMessageHeaders());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }
+            }
+
+        } else if (StompCommand.CONNECT == accessor.getCommand()) {
+            log.info("CONNECT {}");
+        } else if (StompCommand.SEND == accessor.getCommand()) {
+            log.info("StompHandler Send 도착");
+        } else if (StompCommand.SUBSCRIBE == accessor.getCommand()) {
+            log.info("SUBSCRIBE");
             System.out.println("message: ");
             System.out.println(message);
             // header정보에서 구독 destination정보를 얻고, roomId를 추출한다.
@@ -42,11 +101,11 @@ public class StompHandler implements ChannelInterceptor {
             String name = Optional.ofNullable((Principal) message.getHeaders().get("simpUser")).map(Principal::getName).orElse("UnknownUser");
 
 //            log.info("SUBSCRIBED {}, {}", name, roomId);
-        } else if (StompCommand.DISCONNECT == accessor.getCommand()) { // Websocket 연결 종료
+        } else if (StompCommand.DISCONNECT == accessor.getCommand()) {
             // 연결이 종료된 클라이언트 sesssionId로 채팅방 id를 얻는다.
             String sessionId = (String) message.getHeaders().get("simpSessionId");
 
-;
+            ;
             // 클라이언트 퇴장 메시지를 채팅방에 발송한다.(redis publish)
             String name = Optional.ofNullable((Principal) message.getHeaders().get("simpUser")).map(Principal::getName).orElse("UnknownUser");
 //            chatService.sendChatMessage(ChatMessage.builder().type(ChatMessage.MessageType.QUIT).roomId(roomId).sender(name).build());
@@ -54,7 +113,51 @@ public class StompHandler implements ChannelInterceptor {
 
 //            log.info("DISCONNECTED {}, {}", sessionId, roomId);
         }
+
+
         return message;
+    }
+
+    public String resolveToken(String token) {
+        if (StringUtils.hasText(token) && token.startsWith("Bearer")) {
+            return token.substring(7);
+        }
+        return null;
+    }
+
+    public boolean validAuthenticate(StompHeaderAccessor accessor) {
+        String token = accessor.getFirstNativeHeader(ConstantPool.AUTHORIZATION_HEADER);
+        String jwt = resolveToken(token);
+
+        if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+            log.info("StompHandler JWT 토큰 인증 성공");
+            return true;
+        }
+        log.info("StompHandler JWT 토큰 인증 실패");
+        return false;
+    }
+
+    public String returnValidRefreshAuthenticate(StompHeaderAccessor accessor) throws UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeyException {
+        String token = accessor.getFirstNativeHeader(ConstantPool.REFRESH_HEADER);
+        String refreshToken = resolveToken(token);
+        String clientIp = (String) accessor.getSessionAttributes().get("clientIp");
+
+        log.info("StompHandler clientIp {} :", clientIp);
+
+
+        if (StringUtils.hasText(refreshToken) && refreshTokenProvider.validateToken(refreshToken,clientIp)) {
+            Authentication authentication = tokenProvider.getAuthentication(refreshToken);
+
+            if (redisService.getRefreshToken("refresh:"+
+                    hmacAndBase64.crypt(clientIp,"HmacSHA512")+"_"+authentication.getName()).equals(refreshToken)) {
+
+                String renewToken = tokenProvider.createToken(authentication);
+                return renewToken;
+            }
+
+        }
+        return null;
+
     }
 
 }

@@ -44,9 +44,23 @@ public class JwtFilter extends GenericFilterBean {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
         HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
 
+        String requestURI = httpServletRequest.getRequestURI();
+        if (requestURI.startsWith("/auth") || requestURI.startsWith("/error") || requestURI.startsWith("/ws-stomp")) {
+            log.info("사용자 인증 필요없는 url {}", requestURI);
+        }  else {
+            authenticateUsingHeader(httpServletRequest, httpServletResponse);
+        }
+
+        log.info("필터 통과 uri {}",requestURI);
+        filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+
+
+    private void authenticateUsingHeader(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
         // resolveToken을 통해 토큰을 받아와서 유효성 검증을 하고 정상 토큰이면 SecurityContext에 저장한다.
-        String jwt = resolveToken(httpServletRequest);
-        String refreshToken = resolveRefreshToken(httpServletRequest);
+        String jwt = resolveTokenInHeader(httpServletRequest);
+        String refreshToken = resolveRefreshTokenInHeader(httpServletRequest);
 
         String requestURI = httpServletRequest.getRequestURI();
         String ipAddress = httpServletRequest.getRemoteAddr();
@@ -55,9 +69,9 @@ public class JwtFilter extends GenericFilterBean {
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 Authentication authentication = tokenProvider.getAuthentication(jwt);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Security Context에 '{}' 인증 정보를 저장했습니다, uri: {}", authentication.getName(), requestURI);
+                log.info("Security Context에 '{}' 인증 정보를 저장했습니다, uri: {}", authentication.getName(), requestURI);
             } else {
-                log.debug("유효한 JWT 토큰이 없습니다, uri: {}", requestURI);
+                log.info("유효한 JWT 토큰이 없습니다, uri: {}", requestURI);
                 throw new NoJwtTokenException("JWT 토큰이 없습니다. Refresh 토큰을 확인하겠습니다.");
             }
         } catch (ExpiredTokenException | NoJwtTokenException e) {
@@ -79,7 +93,7 @@ public class JwtFilter extends GenericFilterBean {
 
 
                 } else {
-                    log.debug("유효한 Refresh 토큰이 없습니다, uri: {}", requestURI);
+                    log.info("유효한 Refresh 토큰이 없습니다, uri: {}", requestURI);
                 }
 
 
@@ -94,16 +108,16 @@ public class JwtFilter extends GenericFilterBean {
             log.warn("{}",e);
             log.warn("JWT 토큰 인증에 실패하였습니다.");
         }
-
-
-        filterChain.doFilter(servletRequest, servletResponse);
     }
 
+
+
+
     // Request Header에서 토큰 정보를 꺼내오기 위한 resolveToken 메소드 추가
-    private String resolveToken(HttpServletRequest request) {
+    private String resolveTokenInHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
 
-        log.debug("헤더의 Access 토큰 : {}", bearerToken);
+        log.info("헤더의 Access 토큰 : {}", bearerToken);
 
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
@@ -112,12 +126,13 @@ public class JwtFilter extends GenericFilterBean {
         return null;
     }
 
+
     // Request Header에서 리프레쉬 토큰 정보를 꺼내오기 위한 resolveRefreshToken 메소드 추가
-    private String resolveRefreshToken(HttpServletRequest request) {
+    private String resolveRefreshTokenInHeader(HttpServletRequest request) {
         String refreshToken = request.getHeader(REFRESH_HEADER);
 
 
-        log.debug("헤더의 Refresh 토큰 : {}", refreshToken);
+        log.info("헤더의 Refresh 토큰 : {}", refreshToken);
 
         if (StringUtils.hasText(refreshToken) && refreshToken.startsWith("Bearer ")) {
             return refreshToken.substring(7);
@@ -125,4 +140,5 @@ public class JwtFilter extends GenericFilterBean {
 
         return null;
     }
+
 }

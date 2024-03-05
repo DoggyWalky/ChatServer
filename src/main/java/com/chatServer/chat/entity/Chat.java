@@ -2,13 +2,19 @@ package com.chatServer.chat.entity;
 
 import com.chatServer.member.entity.Member;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 
 @Entity
+@Getter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Chat {
 
     @Id
@@ -35,5 +41,29 @@ public class Chat {
     @Column(updatable = false, name="created_at")
     private LocalDateTime createdAt;
 
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public static Chat createEnterMessage(Member member,ChatRoom room) {
+        return Chat.builder()
+                .member(member)
+                .chatRoom(room)
+                .content("1:1 문의하기 입장하셨습니다.")
+                .readYn(false)
+                .deleteYn(false)
+                .build();
+    }
+
+    public static Chat createTalkMessage(Member member, ChatRoom room,String content) {
+        return Chat.builder()
+                .member(member)
+                .chatRoom(room)
+                .content(content)
+                .readYn(false)
+                .deleteYn(false)
+                .build();
+    }
 
 }

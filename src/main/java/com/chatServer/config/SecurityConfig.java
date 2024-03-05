@@ -61,8 +61,8 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET,"/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/ws/**").permitAll()
-                        .requestMatchers("/chat/**").permitAll()
+                        .requestMatchers("/ws-stomp/**").permitAll()
+//                        .requestMatchers("/chat/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET,"/**.css", "/**.js", "/**.png").permitAll()
                         .anyRequest().authenticated());
@@ -85,7 +85,6 @@ public class SecurityConfig {
 
         http
                 // JwtFilter를 addFilterBefore로 등록했던 JwtSecurityConfig 클래스도 적용해준다.
-//                .apply(new JwtSecurityConfig(tokenProvider, refreshTokenProvider, redisService, hmacAndBase64));
                 .addFilterBefore(new JwtFilter(tokenProvider,refreshTokenProvider,redisService, hmacAndBase64),
                         UsernamePasswordAuthenticationFilter.class);
 
@@ -98,6 +97,7 @@ public class SecurityConfig {
         return (web) -> {
             web.ignoring().requestMatchers(request -> request.getRequestURI().startsWith("/h2-console"));
             web.ignoring().requestMatchers(request -> request.getRequestURI().startsWith("/favicon.ico"));
+            web.ignoring().requestMatchers("/**.css", "/**.js", "/**.png");
         };
     }
 }

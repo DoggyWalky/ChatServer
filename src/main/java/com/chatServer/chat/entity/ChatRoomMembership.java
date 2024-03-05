@@ -21,6 +21,10 @@ public class ChatRoomMembership {
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(updatable = false,name="opponent_id")
+    private Member opponent;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(updatable = false,name="room_id")
     private ChatRoom chatRoom;
 
@@ -30,8 +34,9 @@ public class ChatRoomMembership {
     @Column(name="left_at")
     private LocalDateTime leftAt;
 
-    public ChatRoomMembership(Member member, ChatRoom chatRoom) {
+    public ChatRoomMembership(Member member, Member opponent, ChatRoom chatRoom) {
         this.member = member;
+        this.opponent = opponent;
         this.chatRoom = chatRoom;
         this.isVisible = true;
     }
