@@ -11,6 +11,6 @@ import java.util.List;
 public interface ChatRepository extends JpaRepository<Chat, Long> {
 
     @Query("select new com.chatServer.chat.dto.response.ChatMessageResponse(c.id,c.member.id,c.createdAt,c.content,c.readYn,c.deleteYn) " +
-            "from Chat c where c.chatRoom.id = :roomId and c.chatRoom.deleteYn = false")
+            "from Chat c where c.chatRoom.id = :roomId and c.chatRoom.deleteAt is null")
     List<ChatMessageResponse> findChatList(@Param("roomId") Long roomId);
 }

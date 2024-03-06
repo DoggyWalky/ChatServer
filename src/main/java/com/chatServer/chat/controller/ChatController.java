@@ -39,6 +39,8 @@ public class ChatController {
         return new ResponseEntity<>(roomList,HttpStatus.OK);
     }
 
+    // TODO: 채팅 읽음 로직 추가해야한다 또한 채팅방에 있을 시 클라이언트 화면 상에서 채팅 읽음 로직 어떻게 구성할지 생각
+    // TODO: 상대가 채팅방을 보고 있을 시 채팅 치면 채팅 읽음으로 수정이 되어야함
     @GetMapping("/chat/{roomId}")
     public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("roomId") Long roomId) {
         List<ChatMessageResponse> chatMessages = chatService.getChatMessages(roomId);
