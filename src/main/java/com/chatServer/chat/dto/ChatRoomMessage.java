@@ -7,7 +7,7 @@ import lombok.ToString;
 @ToString
 public class ChatRoomMessage {
 
-    private enum Type {
+    public enum Type {
         UNVISIBLE, QUIT, CREATE
     }
 

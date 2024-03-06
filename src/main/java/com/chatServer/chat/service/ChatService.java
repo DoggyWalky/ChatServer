@@ -49,7 +49,7 @@ public class ChatService {
     public void sendChatMessage(ChatMessage message) {
 
         // Todo: 예외 발생 시 어떻게 클라이언트에게 전달해줄 지 결정해야한다.
-
+        // Todo: TALK, QUIT 일 때 구분하기
         if (message.getType() == ChatMessage.Type.TALK) {
             // 메시지 저장
             Member member = memberRepository.findByMemberId(message.getMemberId()).orElseThrow(
@@ -60,10 +60,15 @@ public class ChatService {
             chatRepository.save(chat);
 
             // 상대 회원 pk 찾기
-            Member opponentMember = chatRoomMembershipRepository.findOpponentId(room.getId(), message.getMemberId()).get();
+            Member opponentMember = chatRoomMembershipRepository.findOpponentId(room.getId(), message.getMemberId()).orElseThrow(() -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
 
             // 채팅방 수정(마지막 메시지 UPDATE)
             room.modifyLastMessage(chat.getId());
+
+            // 채팅방 멤버십에서 상대 유저의 visible을 true로 전환
+            ChatRoomMembership membership = chatRoomMembershipRepository.findValidChatRoom(room.getId(), opponentMember.getId(), member.getId()).orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_MEMBERSHIP_NOT_FOUND));
+            membership.changeVisible(true);
+
 
             // 레디스 구독자들에게 메시지 publish
             redisTemplate.convertAndSend(chatMessageTopic.getTopic(), new RedisChatMessage(message.getRoomId(),opponentMember.getId(),new ChatMessageResponse(chat)));
@@ -78,34 +83,11 @@ public class ChatService {
      * 채팅 내역 불러오기
      */
     public List<ChatMessageResponse> getChatMessages(Long roomId) {
-//        List<ChatMessageResponse> chatList = null;
-//        try {
-//            chatList  = chatRepository.findChatList(roomId);
-//        } catch(Exception e) {
-//            System.out.println(e);
-//        }
+        // Todo: 예외 처리(웹소켓으로 전송할 필요 없이 ApplicationException 보내주기)
         List<ChatMessageResponse> chatList = chatRepository.findChatList(roomId);
         return chatList;
     }
 
-//    public ChatMessageResponse createChat(ChatMessage message) {
-//
-//        // Todo: 메시지 타입에 따른 로직 처리하기
-//
-//        // TALK
-//        if (message.getType()== ChatMessage.Type.TALK) {
-//            Member member = memberRepository.findById(message.getMemberId()).orElseThrow(() -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
-//            ChatRoom chatRoom = chatRoomRepository.findById(message.getRoomId()).orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_NOT_FOUND));
-//
-//            Chat chat = Chat.createTalkMessage(member,chatRoom,message.getMessage());
-//            chatRepository.save(chat);
-//
-//            chatRoom.modifyLastMessage(chat.getId());
-//            return new ChatMessageResponse(chat);
-//        }
-//
-//        return null;
-//    }
 
 
     /**
@@ -149,6 +131,26 @@ public class ChatService {
     }
 
 
+    /**
+     * 채팅방 안보이도록 설정
+     */
+    public void unvisibleChatRoom(ChatRoomMessage roomMessage) throws ApplicationException {
+
+        // 실제 유효한 채팅방이 있는지 검증
+        ChatRoom chatRoom = chatRoomRepository.findChatRoomById(roomMessage.getChatRoomId()).orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_NOT_FOUND));
+
+        // 해당 채팅방이 본인과 상대방이 속한 채팅방인지 검증 및 채팅방 멤버십 조회
+        ChatRoomMembership memberShip = chatRoomMembershipRepository.findValidChatRoom(chatRoom.getId(), roomMessage.getSenderId(), roomMessage.getReceiverId())
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_MEMBERSHIP_NOT_FOUND));
+
+        // 채팅방 멤버십 수정
+        memberShip.changeVisible(false);
+    }
+
+
+    /**
+     * 문의 시(채팅방 생성) 입장 채팅 생성
+     */
     public ChatMessage createEnterChatMessage(Member member, ChatRoom room) {
         Chat enterMessage = Chat.createEnterMessage(member, room);
         // 채팅 저장

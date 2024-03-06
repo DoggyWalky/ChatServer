@@ -29,4 +29,11 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
             "and rm.leftAt is null " +
             "and rm.chatRoom.deleteYn = false")
     Optional<Member> findOpponentId(@Param("roomId") Long roomId, @Param("memberId") Long memberId);
+
+    @Query("select rm from ChatRoomMembership rm " +
+            "where rm.chatRoom.id = :roomId " +
+            "and rm.member.id = :memberId " +
+            "and rm.opponent.id = :opponentId " +
+            "and rm.leftAt is null")
+    Optional<ChatRoomMembership> findValidChatRoom(@Param("roomId") Long roomId, @Param("memberId") Long senderId, @Param("opponentId") Long receiverId);
 }

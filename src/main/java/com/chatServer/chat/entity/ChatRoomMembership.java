@@ -40,4 +40,12 @@ public class ChatRoomMembership {
         this.chatRoom = chatRoom;
         this.isVisible = true;
     }
+
+    public void changeVisible(Boolean isVisible) {
+        this.isVisible = isVisible;
+    }
+
+    public void quitChat() {
+        this.leftAt = LocalDateTime.now();
+    }
 }

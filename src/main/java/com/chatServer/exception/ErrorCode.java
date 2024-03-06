@@ -21,6 +21,8 @@ public enum ErrorCode {
     // CHAT
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "Room not founded"),
 
+    ROOM_MEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "Room_membership not founded"),
+
     // MEMBER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not founded"),
 
