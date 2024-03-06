@@ -12,7 +12,8 @@ import java.util.Optional;
 
 public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMembership, Long> {
 
-    @Query("select new com.chatServer.chat.dto.response.ChatRoomResponse(crms.chatRoom.id,opponent.member.id, opponent.nickName, opponent.profileImage, c.content, c.readYn) from ChatRoomMembership crms " +
+    @Query("select new com.chatServer.chat.dto.response.ChatRoomResponse(crms.chatRoom.id,opponent.member.id, opponent.nickName, opponent.profileImage, c.content, c.readYn, crms2.leftAt, crms.chatRoom.jobPostId) from ChatRoomMembership crms " +
+            "join ChatRoomMembership crms2 on crms2.chatRoom.id=crms.chatRoom.id and crms2.opponent.id = :memberId " +
             "join MemberProfileInfo opponent " +
             "on crms.opponent.id = opponent.member.id and opponent.deletedYn = false " +
             "join Chat c on c.id=crms.chatRoom.lastChatId " +

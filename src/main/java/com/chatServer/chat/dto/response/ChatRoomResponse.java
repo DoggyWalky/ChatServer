@@ -4,9 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
-@AllArgsConstructor
 public class ChatRoomResponse {
 
     // 채팅방 pk
@@ -27,6 +28,20 @@ public class ChatRoomResponse {
     // 읽음여부
     private Boolean readYn;
 
-    // Todo: JobPost Id 추가
+    // JobPost Id
+    private Long jobPostId;
 
+    // 상대방 나간 유무 체크
+    private Boolean isLeft;
+
+    public ChatRoomResponse(Long roomId, Long opponentId, String opponentNickname, String image, String lastMessage, Boolean readYn, LocalDateTime leftAt, Long jobPostId) {
+        this.roomId = roomId;
+        this.opponentId = opponentId;
+        this.opponentNickname = opponentNickname;
+        this.image = image;
+        this.lastMessage = lastMessage;
+        this.readYn = readYn;
+        this.isLeft = leftAt==null ? false : true;
+        this.jobPostId = jobPostId;
+    }
 }
