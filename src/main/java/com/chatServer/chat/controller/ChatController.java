@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +43,6 @@ public class ChatController {
     public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("roomId") Long roomId) {
         List<ChatMessageResponse> chatMessages = chatService.getChatMessages(roomId);
         return new ResponseEntity<>(chatMessages, HttpStatus.OK);
-
     }
+
 }
