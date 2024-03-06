@@ -2,6 +2,7 @@ package com.chatServer.chat.entity;
 
 import com.chatServer.member.entity.Member;
 import jakarta.persistence.*;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @NoArgsConstructor
 @Table(name="room_membership")
+@Getter
 public class ChatRoomMembership {
 
     @Id

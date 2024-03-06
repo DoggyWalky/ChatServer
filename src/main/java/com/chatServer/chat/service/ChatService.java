@@ -147,6 +147,41 @@ public class ChatService {
         memberShip.changeVisible(false);
     }
 
+    /**
+     * 채팅방 나가기 설정
+     */
+    public ChatMessageResponse quitChatRoom(ChatRoomMessage roomMessage) throws ApplicationException {
+        // Todo: 만약 상대방도 나가기가 되어 있을 시 해당 채팅방은 delete해줘야한다
+        // 실제 유효한 채팅방이 있는지 검증
+        ChatRoom chatRoom = chatRoomRepository.findChatRoomById(roomMessage.getChatRoomId()).orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_NOT_FOUND));
+
+        // 해당 채팅방이 본인과 상대방이 속한 채팅방인지 검증 및 채팅방 멤버십 조회
+        ChatRoomMembership memberShip = chatRoomMembershipRepository.findValidChatRoom(chatRoom.getId(), roomMessage.getSenderId(), roomMessage.getReceiverId())
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_MEMBERSHIP_NOT_FOUND));
+
+        // 상대방이 나갔는지부터 체크
+        ChatRoomMembership opponentShip = chatRoomMembershipRepository.findValidChatRoom(chatRoom.getId(), roomMessage.getReceiverId(), roomMessage.getSenderId())
+                .orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_MEMBERSHIP_NOT_FOUND));
+
+        // 상대방 나갔을 시 나도 나감 처리해주고 해당 채팅방 delete 하기
+        if (opponentShip.getLeftAt() != null) {
+            memberShip.getChatRoom().deleteChatRoom();
+            // 내 채팅방 멤버십 나감 처리
+            memberShip.quitChat();
+            return null;
+        } else {
+            // 내 채팅방 멤버십 나감 처리
+            memberShip.quitChat();
+            // 마지막 채팅 내역 수정
+            Chat chat = Chat.quitTalkMessage(memberShip.getMember(),memberShip.getChatRoom());
+            chatRepository.save(chat);
+            memberShip.getChatRoom().modifyLastMessage(chat.getId());
+            ChatMessageResponse chatMessageResponse = new ChatMessageResponse(chat);
+            return chatMessageResponse;
+        }
+
+    }
+
 
     /**
      * 문의 시(채팅방 생성) 입장 채팅 생성

@@ -28,7 +28,7 @@ public class ChatRoomResponse {
     // 읽음여부
     private Boolean readYn;
 
-    // JobPost Id
+    // JobPostId
     private Long jobPostId;
 
     // 상대방 나간 유무 체크

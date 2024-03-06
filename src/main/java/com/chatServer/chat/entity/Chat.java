@@ -66,4 +66,14 @@ public class Chat {
                 .build();
     }
 
+    public static Chat quitTalkMessage(Member member, ChatRoom room) {
+        return Chat.builder()
+                .member(member)
+                .chatRoom(room)
+                .content("채팅방을 나가셨습니다.")
+                .readYn(false)
+                .deleteYn(false)
+                .build();
+    }
+
 }

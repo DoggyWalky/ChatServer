@@ -26,8 +26,8 @@ public class ChatRoom {
     @Column(name="last_chat_id")
     private Long lastChatId;
 
-    @Column(name="delete_yn")
-    private Boolean deleteYn;
+    @Column(name="delete_at")
+    private LocalDateTime deleteAt;
 
     public ChatRoom(Long jobPostId) {
         this.jobPostId = jobPostId;
@@ -36,11 +36,15 @@ public class ChatRoom {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
-        this.deleteYn = false;
+        this.deleteAt = null;
     }
 
     public void modifyLastMessage(Long lastChatId) {
         this.lastChatId = lastChatId;
+    }
+
+    public void deleteChatRoom() {
+        this.deleteAt = LocalDateTime.now();
     }
 
 
