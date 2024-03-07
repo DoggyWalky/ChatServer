@@ -3,7 +3,9 @@ package com.chatServer.subscriber;
 import com.chatServer.chat.dto.ChatMessage;
 import com.chatServer.chat.dto.ChatRoomMessage;
 import com.chatServer.chat.dto.response.ChatMessageResponse;
+import com.chatServer.chat.dto.response.ChatStatusResponse;
 import com.chatServer.chat.service.ChatService;
+import com.chatServer.constant.ResponseCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +47,7 @@ public class ChatRoomSubscriber {
                 chatService.unvisibleChatRoom(chatRoomMessage);
 
                 // 채팅방을 구독한 클라이언트에게 메시지 발송
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),"unvisible completed");
+                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),new ChatStatusResponse(ResponseCode.UNVISIBLE_COMPLETED));
             } else if (chatRoomMessage.getType() == ChatRoomMessage.Type.QUIT) {
                 // 채팅방 나가도록 설정
                 ChatMessageResponse chatMessageResponse = chatService.quitChatRoom(chatRoomMessage);
@@ -54,8 +56,8 @@ public class ChatRoomSubscriber {
                 messagingTemplate.convertAndSend("/sub/chat/room/"+chatRoomMessage.getChatRoomId(),chatMessageResponse);
 
                 // 채팅방을 구독한 클라이언트에게 메시지 발송
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),"user leave chatroom");
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getReceiverId(),"user leave chatroom");
+                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),new ChatStatusResponse(ResponseCode.QUIT_COMPLETED));
+                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getReceiverId(),new ChatStatusResponse(ResponseCode.QUIT_COMPLETED));
             }
 
 
