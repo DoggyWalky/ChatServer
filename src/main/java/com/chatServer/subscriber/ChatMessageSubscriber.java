@@ -19,7 +19,6 @@ public class ChatMessageSubscriber {
     private final ObjectMapper objectMapper;
     private final SimpMessageSendingOperations messagingTemplate;
 
-    private final ChatService chatService;
 
     /**
      * Redis에서 메시지가 발행(publish)되면 대기하고 있던 RedisSubscriber가 해당 메시지를 받아 처리함

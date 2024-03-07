@@ -23,6 +23,10 @@ public enum ErrorCode {
 
     ROOM_MEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "Room_membership not founded"),
 
+    OPPONENT_LEFT_OUT(HttpStatus.BAD_REQUEST, "Chat Opponent has left"),
+
+    CHATROOM_EXISTS(HttpStatus.CONFLICT, "ChatRoom exists"),
+
     // MEMBER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not founded"),
 

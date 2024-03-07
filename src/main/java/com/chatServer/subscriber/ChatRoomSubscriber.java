@@ -6,6 +6,8 @@ import com.chatServer.chat.dto.response.ChatMessageResponse;
 import com.chatServer.chat.dto.response.ChatStatusResponse;
 import com.chatServer.chat.service.ChatService;
 import com.chatServer.constant.ResponseCode;
+import com.chatServer.exception.ApplicationException;
+import com.chatServer.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +29,10 @@ public class ChatRoomSubscriber {
      * Redis에서 메시지가 발행(publish)되면 대기하고 있던 RedisSubscriber가 해당 메시지를 받아 처리함
      */
     public void sendMessage(String publishMessage) {
+        ChatRoomMessage chatRoomMessage = null;
         try {
             //ChatMessage 객체로 매핑
-            ChatRoomMessage chatRoomMessage = objectMapper.readValue(publishMessage, ChatRoomMessage.class);
+            chatRoomMessage = objectMapper.readValue(publishMessage, ChatRoomMessage.class);
             System.out.println("chatRoom Message 도착");
             System.out.println(chatRoomMessage.toString());
 
@@ -52,8 +55,10 @@ public class ChatRoomSubscriber {
                 // 채팅방 나가도록 설정
                 ChatMessageResponse chatMessageResponse = chatService.quitChatRoom(chatRoomMessage);
 
-                // 채팅방 자체에 나가기 메시지 전송
-                messagingTemplate.convertAndSend("/sub/chat/room/"+chatRoomMessage.getChatRoomId(),chatMessageResponse);
+                if (chatMessageResponse != null) {
+                    // 채팅방 자체에 나가기 메시지 전송
+                    messagingTemplate.convertAndSend("/sub/chat/room/"+chatRoomMessage.getChatRoomId(),chatMessageResponse);
+                }
 
                 // 채팅방을 구독한 클라이언트에게 메시지 발송
                 messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),new ChatStatusResponse(ResponseCode.QUIT_COMPLETED));
@@ -61,9 +66,13 @@ public class ChatRoomSubscriber {
             }
 
 
-        } catch (Exception e) {
+        } catch (ApplicationException e) {
             // TODO: 예외 발생 시 해당 구독자(클라이언트)에게 예외 메시지 보내기 구현
             log.error("Exception {}", e);
+            messagingTemplate.convertAndSend("/sub/errorMessage/" +chatRoomMessage.getSenderId(), new ChatStatusResponse(e.getErrorCode()));
+        } catch (Exception e) {
+            log.error("Exception {}", e);
+            messagingTemplate.convertAndSend("/sub/errorMessage/" +chatRoomMessage.getSenderId(), new ChatStatusResponse(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }
 }

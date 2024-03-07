@@ -3,12 +3,15 @@ package com.chatServer.chat.controller;
 import com.chatServer.chat.dto.ChatMessage;
 import com.chatServer.chat.dto.response.ChatMessageResponse;
 import com.chatServer.chat.dto.response.ChatRoomResponse;
+import com.chatServer.chat.dto.response.ChatStatusResponse;
 import com.chatServer.chat.service.ChatService;
+import com.chatServer.exception.ApplicationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -21,6 +24,8 @@ public class ChatController {
 
     private final ChatService chatService;
 
+    private final SimpMessageSendingOperations messagingTemplate;
+
     /**
      * websocket "/pub/chat/message"로 들어오는 메시징을 처리한다.
      */
@@ -28,7 +33,11 @@ public class ChatController {
     public void message(ChatMessage message) {
         log.info("메시지 도착 : {}", message.toString());
         // Websocket에 발행된 메시지를 redis로 발행(publish)
-        chatService.sendChatMessage(message);
+        try {
+            chatService.sendChatMessage(message);
+        } catch (ApplicationException e) {
+            messagingTemplate.convertAndSend("/sub/errorMessage/"+message.getMemberId(), new ChatStatusResponse(e.getErrorCode()));
+        }
     }
 
     @GetMapping("/chat/rooms")

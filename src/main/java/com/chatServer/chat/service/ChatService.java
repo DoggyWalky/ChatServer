@@ -46,7 +46,7 @@ public class ChatService {
     /**
      * 메시지 생성 및 메시지 전달
      */
-    public void sendChatMessage(ChatMessage message) {
+    public void sendChatMessage(ChatMessage message) throws ApplicationException {
 
         // Todo: 예외 발생 시 어떻게 클라이언트에게 전달해줄 지 결정해야한다.
         // Todo: TALK, QUIT 일 때 구분하기
@@ -56,18 +56,23 @@ public class ChatService {
                     () -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
             ChatRoom room = chatRoomRepository.findById(message.getRoomId()).orElseThrow(
                     () -> new ApplicationException(ErrorCode.ROOM_NOT_FOUND));
-            Chat chat = Chat.createTalkMessage(member,room, message.getMessage());
-            chatRepository.save(chat);
+
 
             // 상대 회원 pk 찾기
-            Member opponentMember = chatRoomMembershipRepository.findOpponentId(room.getId(), message.getMemberId()).orElseThrow(() -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
+            Member opponentMember = chatRoomMembershipRepository.findOpponentId(room.getId(), message.getMemberId())
+                    .orElseThrow(() -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
+
+            // 상대방이 채팅방을 나갔는지 확인해야 한다
+            ChatRoomMembership opponentMembership = chatRoomMembershipRepository.findValidChatRoom(room.getId(), opponentMember.getId(), member.getId()).orElseThrow(() -> new ApplicationException(ErrorCode.OPPONENT_LEFT_OUT));
+
+            Chat chat = Chat.createTalkMessage(member,room, message.getMessage());
+            chatRepository.save(chat);
 
             // 채팅방 수정(마지막 메시지 UPDATE)
             room.modifyLastMessage(chat.getId());
 
             // 채팅방 멤버십에서 상대 유저의 visible을 true로 전환
-            ChatRoomMembership membership = chatRoomMembershipRepository.findValidChatRoom(room.getId(), opponentMember.getId(), member.getId()).orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_MEMBERSHIP_NOT_FOUND));
-            membership.changeVisible(true);
+            opponentMembership.changeVisible(true);
 
 
             // 레디스 구독자들에게 메시지 publish
@@ -84,7 +89,12 @@ public class ChatService {
      */
     public List<ChatMessageResponse> getChatMessages(Long roomId) {
         // Todo: 예외 처리(웹소켓으로 전송할 필요 없이 ApplicationException 보내주기)
-        List<ChatMessageResponse> chatList = chatRepository.findChatList(roomId);
+        List<ChatMessageResponse> chatList;
+        try {
+            chatList= chatRepository.findChatList(roomId);
+        } catch (Exception e) {
+            throw new ApplicationException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
         return chatList;
     }
 
@@ -100,7 +110,7 @@ public class ChatService {
     /**
      * 채팅방 생성 요청 시 채팅방/멤버십 생성
      */
-    public ChatMessage createChatRoom(ChatRoomMessage roomMessage) {
+    public ChatMessage createChatRoom(ChatRoomMessage roomMessage) throws ApplicationException,Exception {
         // Todo: 해당 채팅방이 존재하는지 DB에서 확인
         // Todo: 만약 채팅 서버에서 에러가 발생했을 때 어떻게 클라이언트에게 전달할지 고민해야한다
         if (chatRoomRepository.findChatRoom(roomMessage.getJobPostId(), roomMessage.getSenderId()).isEmpty()) {
@@ -110,8 +120,8 @@ public class ChatService {
 
             // 채팅방 멤버십 생성
             // Todo: 예외 시 어떻게 처리할지 작성
-            Member sender = memberRepository.findById(roomMessage.getSenderId()).get();
-            Member receiver = memberRepository.findById(roomMessage.getReceiverId()).get();
+            Member sender = memberRepository.findById(roomMessage.getSenderId()).orElseThrow(() -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
+            Member receiver = memberRepository.findById(roomMessage.getReceiverId()).orElseThrow(() -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
             ChatRoomMembership senderRoomMembership = new ChatRoomMembership(sender,receiver, room);
             ChatRoomMembership receiverRoomMembership = new ChatRoomMembership(receiver,sender, room);
             chatRoomMembershipRepository.save(senderRoomMembership);
@@ -126,7 +136,7 @@ public class ChatService {
         } else  {
             // Todo: 예외 처리
             System.out.println("채팅방 존재");
-            throw new RuntimeException();
+            throw new ApplicationException(ErrorCode.CHATROOM_EXISTS);
         }
     }
 
@@ -160,7 +170,7 @@ public class ChatService {
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_MEMBERSHIP_NOT_FOUND));
 
         // 상대방이 나갔는지부터 체크
-        ChatRoomMembership opponentShip = chatRoomMembershipRepository.findValidChatRoom(chatRoom.getId(), roomMessage.getReceiverId(), roomMessage.getSenderId())
+        ChatRoomMembership opponentShip = chatRoomMembershipRepository.findChatRoom(chatRoom.getId(), roomMessage.getReceiverId(), roomMessage.getSenderId())
                 .orElseThrow(() -> new ApplicationException(ErrorCode.ROOM_MEMBERSHIP_NOT_FOUND));
 
         // 상대방 나갔을 시 나도 나감 처리해주고 해당 채팅방 delete 하기
