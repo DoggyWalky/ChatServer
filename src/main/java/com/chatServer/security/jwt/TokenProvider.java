@@ -61,7 +61,7 @@ public class TokenProvider implements InitializingBean {
 
         // 서버에서 사용하는 Principal 객체에는 member의 pk 값만 저장해서 사용한다.
         User principal = new User(claims.getSubject(), "", new ArrayList<>());
-
+        System.out.println("principal 저장 :"+principal.toString());
         return new UsernamePasswordAuthenticationToken(principal, token, new ArrayList<>());
     }
 
@@ -69,18 +69,19 @@ public class TokenProvider implements InitializingBean {
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            System.out.println("validation 검사 완료");
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            log.debug("잘못된 JWT 서명입니다.");
+            log.info("잘못된 JWT 서명입니다.");
             throw new ApplicationException(ErrorCode.INVALID_TOKEN);
         } catch (ExpiredJwtException e) {
-            log.debug("만료된 JWT 토큰입니다.");
+            log.info("만료된 JWT 토큰입니다.");
             throw new ExpiredTokenException("만료된 JWT 토큰입니다.");
         } catch (UnsupportedJwtException e) {
-            log.debug("지원되지 않는 JWT 토큰입니다.");
+            log.info("지원되지 않는 JWT 토큰입니다.");
             throw new ApplicationException(ErrorCode.INVALID_TOKEN);
         } catch (IllegalArgumentException e) {
-            log.debug("JWT 토큰이 잘못되었습니다.");
+            log.info("JWT 토큰이 잘못되었습니다.");
             throw new ApplicationException(ErrorCode.INVALID_TOKEN);
         } catch (Exception e) {
             return false;

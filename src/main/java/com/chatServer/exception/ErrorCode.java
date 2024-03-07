@@ -18,6 +18,19 @@ public enum ErrorCode {
 
     CRYPT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Crypt error"),
 
+    // CHAT
+    ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "Room not founded"),
+
+    ROOM_MEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "Room_membership not founded"),
+
+    OPPONENT_LEFT_OUT(HttpStatus.BAD_REQUEST, "Chat Opponent has left"),
+
+    CHATROOM_EXISTS(HttpStatus.CONFLICT, "ChatRoom exists"),
+
+    // MEMBER
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not founded"),
+
+
     // TOKEN
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED,"User Authentication is failed"),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "Token is invalid"),

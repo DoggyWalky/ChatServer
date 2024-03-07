@@ -1,25 +1,21 @@
-## API ?? ? SQL ? ??
+server:
+  port: 8081
 spring:
   jpa:
     properties:
       hibernate:
-        #        show_sql: true ?????? ?? ??
         format_sql: true
-## ?? ?? ?? ??
   main:
     allow-circular-references: true
-## Mysql ?? ??
     database: mysql
 
 
-## Mysql ?? ??
   datasource:
     url: ENC(ve8nX3UyUztK39L1bwLNSNpSIUFU6hijhPp/nLchG1bz/R0xWo65JMW1Q61dPzMlZHHItkFOq2jqunsAb1IQKDr8WOqKXArwbQjwhZmW1r/5rSMNLfgVG5Vqp0EG75Obujt+eMcMng4=)
     username: ENC(CRtDDOYA5iA58jbdUQN+Zw==)
     password: ENC(fc3Nv75og6+jpPgiFDF7TvRpABTMLK+v)
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-## redis ??
   data:
     redis:
       host: localhost
@@ -31,18 +27,17 @@ jwt:
   refresh-token-validity-in-seconds: 2592000 #1209600 # 60 * 60 * 24 * 30 30? -> ?
 
 
-#logging:
-#  level:
-#    root: INFO
-#    com:
-#      amazonaws: DEBUG
-#      amazonaws.util.EC2MetadataUtils: ERROR
-#    org:
-#      springframework:
-#        web: DEBUG
-#    org.hibernate.SQL: debug
-#    org.hibernate.type: trace
-#    p6spy: DEBUG
+logging:
+  level:
+    root: INFO
+    org:
+      springframework:
+        web:
+          socket: DEBUG
+        security: DEBUG
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+    p6spy: DEBUG
 
 
 ## p6spy query logging

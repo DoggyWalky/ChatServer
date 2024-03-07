@@ -48,7 +48,7 @@ public class RefreshTokenProvider implements InitializingBean {
 
     public String createToken(Authentication authentication, String ipAddress) {
 
-        log.debug("Refresh token 생성 시 ipAddress : {}", ipAddress);
+        log.info("Refresh token 생성 시 ipAddress : {}", ipAddress);
         String cryptIpAddress=null;
 
 
@@ -69,7 +69,7 @@ public class RefreshTokenProvider implements InitializingBean {
                 .setExpiration(new Date(now + this.tokenValidityInMilliseconds))
                 .compact();
 
-        log.debug("생성된 Refresh 토큰 : {}", token);
+        log.info("생성된 Refresh 토큰 : {}", token);
 
         return token;
 
@@ -83,12 +83,12 @@ public class RefreshTokenProvider implements InitializingBean {
                     .parseClaimsJws(token)
                     .getBody();
 
-            log.debug("Refresh claims : {}", claims.get(IP_ADDRESS_KEY));
+            log.info("Refresh claims : {}", claims.get(IP_ADDRESS_KEY));
 
             String cryptIpAddress = hmacAndBase64.crypt(ipAddress, "HmacSHA512");
 
             if (!claims.get(IP_ADDRESS_KEY).toString().equals(cryptIpAddress)) {
-                log.debug("Refresh 토큰의 ipAddress와 현재 접속한 ipAddress가 일치하지 않음");
+                log.info("Refresh 토큰의 ipAddress와 현재 접속한 ipAddress가 일치하지 않음");
                 return false;
             }
 
