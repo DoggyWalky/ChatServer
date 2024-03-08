@@ -5,6 +5,7 @@ import com.chatServer.chat.entity.ChatRoomMembership;
 import com.chatServer.member.entity.Member;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -42,4 +43,8 @@ public interface ChatRoomMembershipRepository extends JpaRepository<ChatRoomMemb
             "and rm.member.id = :memberId " +
             "and rm.opponent.id = :opponentId ")
     Optional<ChatRoomMembership> findChatRoom(@Param("roomId") Long roomId, @Param("memberId") Long memberId, @Param("opponentId") Long opponentId);
+
+    @Modifying
+    @Query("delete from ChatRoomMembership rm where rm.chatRoom.id IN :rooms")
+    void deleteMemberShipByScheduling(@Param("rooms") List<Long> rooms);
 }
