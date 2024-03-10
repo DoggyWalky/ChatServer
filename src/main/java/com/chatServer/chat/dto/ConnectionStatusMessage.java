@@ -14,6 +14,7 @@ public class ConnectionStatusMessage {
     }
 
     private Long memberId;
+    private Long opponentId;
     private Long chatRoomId;
     private ConnectionStatusMessage.Type type;
 }

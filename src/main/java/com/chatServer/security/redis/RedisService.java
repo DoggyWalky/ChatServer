@@ -37,8 +37,15 @@ public class RedisService implements TokenStorageService {
         redisTemplate.delete(key);
     }
 
-    public Long getChatUserRoomId(Long memberId) {
-        return (Long) (redisTemplate.opsForHash().get("chatUser",memberId.toString()));
+    public String getChatUserRoomId(Long memberId) {
+        Object chatUser = redisTemplate.opsForHash().get("chatUser", memberId.toString());
+        if (chatUser!=null) {
+            System.out.println("chatUser : ");
+            System.out.println(chatUser.toString());
+            return chatUser.toString();
+        } else {
+            return null;
+        }
     }
 
     public void setChatUser(Long memberId, Long roomId) {

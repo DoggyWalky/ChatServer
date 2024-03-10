@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 public enum ResponseCode {
 
     // COMMON
-
+    OK(HttpStatus.OK, "OK"),
 
 
     // CHAT

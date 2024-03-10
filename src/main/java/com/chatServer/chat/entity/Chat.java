@@ -56,22 +56,22 @@ public class Chat {
                 .build();
     }
 
-    public static Chat createTalkMessage(Member member, ChatRoom room,String content) {
+    public static Chat createTalkMessage(Member member, ChatRoom room,String content,boolean readYn) {
         return Chat.builder()
                 .member(member)
                 .chatRoom(room)
                 .content(content)
-                .readYn(false)
+                .readYn(readYn)
                 .deleteYn(false)
                 .build();
     }
 
-    public static Chat quitTalkMessage(Member member, ChatRoom room) {
+    public static Chat quitTalkMessage(Member member, ChatRoom room, boolean readYn) {
         return Chat.builder()
                 .member(member)
                 .chatRoom(room)
                 .content("채팅방을 나가셨습니다.")
-                .readYn(false)
+                .readYn(readYn)
                 .deleteYn(false)
                 .build();
     }
