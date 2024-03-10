@@ -18,4 +18,8 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     @Modifying
     @Query("delete from Chat c where c.chatRoom.id IN :rooms")
     void deleteChatByScheduling(@Param("rooms") List<Long> rooms);
+
+    @Modifying
+    @Query("update Chat c set c.readYn=true where c.chatRoom.id= :roomId and c.member.id <> :memberId")
+    void updateChatRead(@Param("roomId") Long roomId, @Param("memberId") Long memberId);
 }

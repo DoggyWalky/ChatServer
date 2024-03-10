@@ -2,6 +2,7 @@ package com.chatServer.security.redis;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -34,5 +35,17 @@ public class RedisService implements TokenStorageService {
     @Override
     public void removeRefreshToken(String key) {
         redisTemplate.delete(key);
+    }
+
+    public Long getChatUserRoomId(Long memberId) {
+        return (Long) (redisTemplate.opsForHash().get("chatUser",memberId.toString()));
+    }
+
+    public void setChatUser(Long memberId, Long roomId) {
+        redisTemplate.opsForHash().put("chatUser", memberId.toString(), roomId.toString());
+    }
+
+    public void removeChatUser(Long memberId) {
+        redisTemplate.opsForHash().delete("chatUser", memberId.toString());
     }
 }

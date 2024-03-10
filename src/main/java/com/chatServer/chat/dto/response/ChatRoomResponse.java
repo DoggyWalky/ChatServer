@@ -25,8 +25,8 @@ public class ChatRoomResponse {
     // 마지막 메시지
     private String lastMessage;
 
-    // 읽음여부
-    private Boolean readYn;
+    // 새로운 메시지인지 여부
+    private Boolean isNewMessage;
 
     // JobPostId
     private Long jobPostId;
@@ -34,13 +34,13 @@ public class ChatRoomResponse {
     // 상대방 나간 유무 체크
     private Boolean isLeft;
 
-    public ChatRoomResponse(Long roomId, Long opponentId, String opponentNickname, String image, String lastMessage, Boolean readYn, LocalDateTime leftAt, Long jobPostId) {
+    public ChatRoomResponse(Long roomId, Long opponentId, String opponentNickname, String image, String lastMessage, Boolean readYn,Long senderId, LocalDateTime leftAt, Long jobPostId) {
         this.roomId = roomId;
         this.opponentId = opponentId;
         this.opponentNickname = opponentNickname;
         this.image = image;
         this.lastMessage = lastMessage;
-        this.readYn = readYn;
+        this.isNewMessage = opponentId == senderId ? !readYn : false;
         this.isLeft = leftAt==null ? false : true;
         this.jobPostId = jobPostId;
     }
