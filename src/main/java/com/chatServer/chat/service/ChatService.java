@@ -2,23 +2,28 @@ package com.chatServer.chat.service;
 
 import com.chatServer.chat.dto.ChatMessage;
 import com.chatServer.chat.dto.ChatRoomMessage;
+import com.chatServer.chat.dto.ConnectionStatusMessage;
 import com.chatServer.chat.dto.RedisChatMessage;
 import com.chatServer.chat.dto.response.ChatMessageResponse;
 import com.chatServer.chat.dto.response.ChatRoomResponse;
+import com.chatServer.chat.dto.response.ChatStatusResponse;
 import com.chatServer.chat.entity.Chat;
 import com.chatServer.chat.entity.ChatRoom;
 import com.chatServer.chat.entity.ChatRoomMembership;
 import com.chatServer.chat.repository.ChatRepository;
 import com.chatServer.chat.repository.ChatRoomMembershipRepository;
 import com.chatServer.chat.repository.ChatRoomRepository;
+import com.chatServer.constant.ResponseCode;
 import com.chatServer.exception.ApplicationException;
 import com.chatServer.exception.ErrorCode;
 import com.chatServer.member.entity.Member;
 import com.chatServer.member.repository.MemberRepository;
+import com.chatServer.security.redis.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,8 +45,11 @@ public class ChatService {
 
     private final RedisTemplate redisTemplate;
 
+    private final RedisService redisService;
+
     private final ChannelTopic chatMessageTopic;
 
+    private final SimpMessageSendingOperations messagingTemplate;
 
     /**
      * 메시지 생성 및 메시지 전달
@@ -49,7 +57,6 @@ public class ChatService {
     public void sendChatMessage(ChatMessage message) throws ApplicationException {
 
         // Todo: 예외 발생 시 어떻게 클라이언트에게 전달해줄 지 결정해야한다.
-        // Todo: TALK, QUIT 일 때 구분하기
         if (message.getType() == ChatMessage.Type.TALK) {
             // 메시지 저장
             Member member = memberRepository.findByMemberId(message.getMemberId()).orElseThrow(
@@ -65,7 +72,16 @@ public class ChatService {
             // 상대방이 채팅방을 나갔는지 확인해야 한다
             ChatRoomMembership opponentMembership = chatRoomMembershipRepository.findValidChatRoom(room.getId(), opponentMember.getId(), member.getId()).orElseThrow(() -> new ApplicationException(ErrorCode.OPPONENT_LEFT_OUT));
 
-            Chat chat = Chat.createTalkMessage(member,room, message.getMessage());
+            Chat chat = null;
+            // 상대방이 현재 채팅방에 접속했는지 확인 후 접속시엔 읽음처리
+            String connectedRoomId= redisService.getChatUserRoomId(opponentMember.getId());
+            if (connectedRoomId!=null && connectedRoomId.equals(message.getRoomId().toString())) {
+                System.out.println("상대방이 현재 채팅방에 접속 중이다");
+                System.out.println(redisService.getChatUserRoomId(opponentMember.getId()));
+                chat = Chat.createTalkMessage(member,room, message.getMessage(), true);
+            } else {
+                chat = Chat.createTalkMessage(member,room, message.getMessage(), false);
+            }
             chatRepository.save(chat);
 
             // 채팅방 수정(마지막 메시지 UPDATE)
@@ -87,12 +103,17 @@ public class ChatService {
     /**
      * 채팅 내역 불러오기
      */
-    public List<ChatMessageResponse> getChatMessages(Long roomId) {
+    public List<ChatMessageResponse> getChatMessages(Long roomId,Long memberId) {
         // Todo: 예외 처리(웹소켓으로 전송할 필요 없이 ApplicationException 보내주기)
         List<ChatMessageResponse> chatList;
         try {
+            // 채팅 읽기 업데이트
+            updateReadWhenGetChatList(roomId, memberId);
+
+            // 채팅 조회
             chatList= chatRepository.findChatList(roomId);
         } catch (Exception e) {
+            System.out.println(e);
             throw new ApplicationException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
         return chatList;
@@ -182,14 +203,23 @@ public class ChatService {
         } else {
             // 내 채팅방 멤버십 나감 처리
             memberShip.quitChat();
-            // 마지막 채팅 내역 수정
-            Chat chat = Chat.quitTalkMessage(memberShip.getMember(),memberShip.getChatRoom());
+
+            // 상대방이 현재 채팅방에 접속했는지 확인 후 접속시엔 읽음처리
+            Chat chat;
+            String connectedRoomId = redisService.getChatUserRoomId(opponentShip.getId());
+            if (connectedRoomId!=null && connectedRoomId.equals(roomMessage.getChatRoomId().toString())) {
+                chat = Chat.quitTalkMessage(memberShip.getMember(),memberShip.getChatRoom(), true);
+            } else {
+                chat = Chat.quitTalkMessage(memberShip.getMember(),memberShip.getChatRoom(),false);
+            }
+
             chatRepository.save(chat);
+
+            // 마지막 채팅 내역 수정
             memberShip.getChatRoom().modifyLastMessage(chat.getId());
             ChatMessageResponse chatMessageResponse = new ChatMessageResponse(chat);
             return chatMessageResponse;
         }
-
     }
 
 
@@ -204,6 +234,29 @@ public class ChatService {
         // 채팅방 마지막 메시지 설정
         room.modifyLastMessage(enterMessage.getId());
         return new ChatMessage(room.getId(), member.getId(),enterMessage.getContent(), ChatMessage.Type.ENTER);
+    }
+
+    public void updateReadWhenGetChatList(Long roomId, Long memberId) {
+        chatRepository.updateChatRead(roomId, memberId);
+    }
+
+
+    /**
+     * 채팅방 접속 유무 수정 로직
+     */
+    public void modifyConnectionStatus(ConnectionStatusMessage message) {
+        if (message.getType() == ConnectionStatusMessage.Type.CONNECT) {
+            // 채팅방 접속 정보를 REDIS에 저장
+            redisService.setChatUser(message.getMemberId(), message.getChatRoomId());
+
+            // 상대에게 해당 멤버가 채팅방에 접속했다고 알려주기(재랜더링 목적)
+            System.out.println("채팅방 접속 유무에 대한 접속 정보 알려주기");
+            System.out.println(message.getOpponentId());
+            messagingTemplate.convertAndSend("/sub/chat/renew/"+message.getOpponentId(),new ChatStatusResponse(ResponseCode.OK));
+
+        } else if (message.getType() == ConnectionStatusMessage.Type.DISCONNECT) {
+            redisService.removeChatUser(message.getMemberId());
+        }
     }
 
 }

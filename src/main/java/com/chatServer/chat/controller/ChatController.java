@@ -1,6 +1,7 @@
 package com.chatServer.chat.controller;
 
 import com.chatServer.chat.dto.ChatMessage;
+import com.chatServer.chat.dto.ConnectionStatusMessage;
 import com.chatServer.chat.dto.response.ChatMessageResponse;
 import com.chatServer.chat.dto.response.ChatRoomResponse;
 import com.chatServer.chat.dto.response.ChatStatusResponse;
@@ -40,6 +41,15 @@ public class ChatController {
         }
     }
 
+    /**
+     * websocket "/pub/chat/modifyConnectionStatus"로 들어오는 메시징을 처리한다.
+     */
+    @MessageMapping("/chat/modifyConnectionStatus")
+    public void modifyConnectionStatus(ConnectionStatusMessage message) {
+        log.info("메시지 도착 : {}", message.toString());
+        chatService.modifyConnectionStatus(message);
+    }
+
     @GetMapping("/chat/rooms")
     public ResponseEntity<List<ChatRoomResponse>> getRoomList(Principal principal) {
         Long memberId = Long.parseLong(principal.getName());
@@ -51,8 +61,9 @@ public class ChatController {
     // TODO: 채팅 읽음 로직 추가해야한다 또한 채팅방에 있을 시 클라이언트 화면 상에서 채팅 읽음 로직 어떻게 구성할지 생각
     // TODO: 상대가 채팅방을 보고 있을 시 채팅 치면 채팅 읽음으로 수정이 되어야함
     @GetMapping("/chat/{roomId}")
-    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("roomId") Long roomId) {
-        List<ChatMessageResponse> chatMessages = chatService.getChatMessages(roomId);
+    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("roomId") Long roomId,Principal principal) {
+        Long memberId = Long.parseLong(principal.getName());
+        List<ChatMessageResponse> chatMessages = chatService.getChatMessages(roomId, memberId);
         return new ResponseEntity<>(chatMessages, HttpStatus.OK);
     }
 
