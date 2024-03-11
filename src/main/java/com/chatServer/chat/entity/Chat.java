@@ -76,4 +76,8 @@ public class Chat {
                 .build();
     }
 
+    public void deleteChat() {
+        this.deleteYn = true;
+    }
+
 }

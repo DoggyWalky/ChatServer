@@ -259,4 +259,26 @@ public class ChatService {
         }
     }
 
+    /**
+     * 채팅 삭제
+     */
+    public void deleteChatMessage(Long memberId, Long opponentId, Long chatId) {
+        Chat chat = chatRepository.findByChatId(chatId).orElseThrow(() -> new ApplicationException(ErrorCode.CHAT_NOT_FOUND));
+        if (chat.getDeleteYn()) {
+            throw new ApplicationException(ErrorCode.ALREADY_DELETED_CHAT);
+        } else if (chat.getMember().getId()!=memberId) {
+            throw new ApplicationException(ErrorCode.NOT_CHAT_OWNER);
+        }
+        chat.deleteChat();
+
+        // 삭제 된 이후 클라이언트에게 알려 메시지 삭제자는 채팅방 목록을, 상대방은 채팅방 목록과 채팅 목록 모두 갱신시켜줘야한다
+        // 메시지 삭제자 갱신
+        messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+memberId,new ChatStatusResponse(ResponseCode.OK));
+
+
+        // 상대방 갱신
+        messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+opponentId,new ChatStatusResponse(ResponseCode.OK));
+        messagingTemplate.convertAndSend("/sub/chat/renew/"+opponentId,new ChatStatusResponse(ResponseCode.OK));
+    }
+
 }

@@ -27,6 +27,12 @@ public enum ErrorCode {
 
     CHATROOM_EXISTS(HttpStatus.CONFLICT, "ChatRoom exists"),
 
+    CHAT_NOT_FOUND(HttpStatus.NOT_FOUND, "Chat not founded"),
+
+    NOT_CHAT_OWNER(HttpStatus.FORBIDDEN, "Not the message owner"),
+
+    ALREADY_DELETED_CHAT(HttpStatus.GONE, "Chat already deleted"),
+
     // MEMBER
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not founded"),
 

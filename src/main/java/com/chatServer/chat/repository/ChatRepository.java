@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChatRepository extends JpaRepository<Chat, Long> {
 
@@ -22,4 +23,7 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     @Modifying
     @Query("update Chat c set c.readYn=true where c.chatRoom.id= :roomId and c.member.id <> :memberId")
     void updateChatRead(@Param("roomId") Long roomId, @Param("memberId") Long memberId);
+
+    @Query("select c from Chat c join fetch c.member where c.id = :chatId")
+    Optional<Chat> findByChatId(@Param("chatId") Long chatId);
 }
