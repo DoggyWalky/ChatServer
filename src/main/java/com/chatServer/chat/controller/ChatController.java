@@ -5,6 +5,7 @@ import com.chatServer.chat.dto.ConnectionStatusMessage;
 import com.chatServer.chat.dto.response.ChatMessageResponse;
 import com.chatServer.chat.dto.response.ChatRoomResponse;
 import com.chatServer.chat.dto.response.ChatStatusResponse;
+import com.chatServer.chat.dto.response.SimpleChatMessageResponse;
 import com.chatServer.chat.service.ChatService;
 import com.chatServer.exception.ApplicationException;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,9 @@ public class ChatController {
         chatService.modifyConnectionStatus(message);
     }
 
+    /**
+     * 채팅방 목록 조회
+     */
     @GetMapping("/chat/rooms")
     public ResponseEntity<List<ChatRoomResponse>> getRoomList(Principal principal) {
         Long memberId = Long.parseLong(principal.getName());
@@ -58,13 +62,29 @@ public class ChatController {
         return new ResponseEntity<>(roomList,HttpStatus.OK);
     }
 
+    /**
+     * 채팅 목록 조회
+     */
     // TODO: 채팅 읽음 로직 추가해야한다 또한 채팅방에 있을 시 클라이언트 화면 상에서 채팅 읽음 로직 어떻게 구성할지 생각
     // TODO: 상대가 채팅방을 보고 있을 시 채팅 치면 채팅 읽음으로 수정이 되어야함
     @GetMapping("/chat/{roomId}")
-    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("roomId") Long roomId,Principal principal) {
+    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("roomId") Long roomId,
+                                                                     Principal principal) {
         Long memberId = Long.parseLong(principal.getName());
         List<ChatMessageResponse> chatMessages = chatService.getChatMessages(roomId, memberId);
         return new ResponseEntity<>(chatMessages, HttpStatus.OK);
+    }
+
+    /**
+     * 채팅 삭제
+     */
+    @DeleteMapping("/chat/{chatId}")
+    public ResponseEntity deleteChat(@PathVariable("chatId") Long chatId,
+                                     @RequestParam("opponentId") Long opponentId,
+                                     Principal principal) {
+        Long memberId = Long.parseLong(principal.getName());
+        chatService.deleteChatMessage(memberId, opponentId,chatId);
+        return new ResponseEntity(new SimpleChatMessageResponse(chatId),HttpStatus.NO_CONTENT);
     }
 
 }
