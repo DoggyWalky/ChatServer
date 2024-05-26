@@ -22,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @Slf4j
+@RequestMapping("/api")
 public class ChatController {
 
     private final ChatService chatService;
@@ -38,14 +39,14 @@ public class ChatController {
         try {
             chatService.sendChatMessage(message);
         } catch (ApplicationException e) {
-            messagingTemplate.convertAndSend("/sub/errorMessage/"+message.getMemberId(), new ChatStatusResponse(e.getErrorCode()));
+            messagingTemplate.convertAndSend("/sub/error-message/"+message.getMemberId(), new ChatStatusResponse(e.getErrorCode()));
         }
     }
 
     /**
-     * websocket "/pub/chat/modifyConnectionStatus"로 들어오는 메시징을 처리한다.
+     * websocket "/pub/chat/modify-connection-status"로 들어오는 메시징을 처리한다.
      */
-    @MessageMapping("/chat/modifyConnectionStatus")
+    @MessageMapping("/chat/modify-connection-status")
     public void modifyConnectionStatus(ConnectionStatusMessage message) {
         log.info("메시지 도착 : {}", message.toString());
         chatService.modifyConnectionStatus(message);
@@ -67,8 +68,8 @@ public class ChatController {
      */
     // TODO: 채팅 읽음 로직 추가해야한다 또한 채팅방에 있을 시 클라이언트 화면 상에서 채팅 읽음 로직 어떻게 구성할지 생각
     // TODO: 상대가 채팅방을 보고 있을 시 채팅 치면 채팅 읽음으로 수정이 되어야함
-    @GetMapping("/chat/{roomId}")
-    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("roomId") Long roomId,
+    @GetMapping("/chat/{room-id}")
+    public ResponseEntity<List<ChatMessageResponse>> getChatMessages(@PathVariable("room-id") Long roomId,
                                                                      Principal principal) {
         Long memberId = Long.parseLong(principal.getName());
         List<ChatMessageResponse> chatMessages = chatService.getChatMessages(roomId, memberId);
@@ -78,8 +79,8 @@ public class ChatController {
     /**
      * 채팅 삭제
      */
-    @DeleteMapping("/chat/{chatId}")
-    public ResponseEntity deleteChat(@PathVariable("chatId") Long chatId,
+    @DeleteMapping("/chat/{chat-id}")
+    public ResponseEntity deleteChat(@PathVariable("chat-id") Long chatId,
                                      @RequestParam("opponentId") Long opponentId,
                                      Principal principal) {
         Long memberId = Long.parseLong(principal.getName());

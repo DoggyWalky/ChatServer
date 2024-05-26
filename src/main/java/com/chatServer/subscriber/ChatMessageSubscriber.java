@@ -32,8 +32,8 @@ public class ChatMessageSubscriber {
             messagingTemplate.convertAndSend("/sub/chat/room/"+redisChatMessage.getRoomId(), redisChatMessage.getChatMessageResponse());
 
             // 채팅 상대 및 본인의 채팅방 목록에게 renew 전달하기
-            messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+redisChatMessage.getReceiverId(),redisChatMessage);
-            messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+redisChatMessage.getChatMessageResponse().getMemberId(),redisChatMessage);
+            messagingTemplate.convertAndSend("/sub/chat-room/renew/"+redisChatMessage.getReceiverId(),redisChatMessage);
+            messagingTemplate.convertAndSend("/sub/chat-room/renew/"+redisChatMessage.getChatMessageResponse().getMemberId(),redisChatMessage);
         } catch (Exception e) {
             log.error("Exception {}", e);
         }
