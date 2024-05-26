@@ -43,14 +43,14 @@ public class ChatRoomSubscriber {
 
                 // 채팅방을 구독한 클라이언트에게 메시지 발송(Redis의 토픽에 메시지 발행 후 작업)
                 // 채팅 전송 로직
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getReceiverId(),message);
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),message);
+                messagingTemplate.convertAndSend("/sub/chat-room/renew/"+chatRoomMessage.getReceiverId(),message);
+                messagingTemplate.convertAndSend("/sub/chat-room/renew/"+chatRoomMessage.getSenderId(),message);
             } else if (chatRoomMessage.getType() == ChatRoomMessage.Type.UNVISIBLE) {
                 // 채팅방 안보이게 설정
                 chatService.unvisibleChatRoom(chatRoomMessage);
 
                 // 채팅방을 구독한 클라이언트에게 메시지 발송
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),new ChatStatusResponse(ResponseCode.UNVISIBLE_COMPLETED));
+                messagingTemplate.convertAndSend("/sub/chat-room/renew/"+chatRoomMessage.getSenderId(),new ChatStatusResponse(ResponseCode.UNVISIBLE_COMPLETED));
             } else if (chatRoomMessage.getType() == ChatRoomMessage.Type.QUIT) {
                 // 채팅방 나가도록 설정
                 ChatMessageResponse chatMessageResponse = chatService.quitChatRoom(chatRoomMessage);
@@ -61,18 +61,18 @@ public class ChatRoomSubscriber {
                 }
 
                 // 채팅방을 구독한 클라이언트에게 메시지 발송
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getSenderId(),new ChatStatusResponse(ResponseCode.QUIT_COMPLETED));
-                messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+chatRoomMessage.getReceiverId(),new ChatStatusResponse(ResponseCode.QUIT_COMPLETED));
+                messagingTemplate.convertAndSend("/sub/chat-room/renew/"+chatRoomMessage.getSenderId(),new ChatStatusResponse(ResponseCode.QUIT_COMPLETED));
+                messagingTemplate.convertAndSend("/sub/chat-room/renew/"+chatRoomMessage.getReceiverId(),new ChatStatusResponse(ResponseCode.QUIT_COMPLETED));
             }
 
 
         } catch (ApplicationException e) {
             // TODO: 예외 발생 시 해당 구독자(클라이언트)에게 예외 메시지 보내기 구현
             log.error("Exception {}", e);
-            messagingTemplate.convertAndSend("/sub/errorMessage/" +chatRoomMessage.getSenderId(), new ChatStatusResponse(e.getErrorCode()));
+            messagingTemplate.convertAndSend("/sub/error-message/" +chatRoomMessage.getSenderId(), new ChatStatusResponse(e.getErrorCode()));
         } catch (Exception e) {
             log.error("Exception {}", e);
-            messagingTemplate.convertAndSend("/sub/errorMessage/" +chatRoomMessage.getSenderId(), new ChatStatusResponse(ErrorCode.INTERNAL_SERVER_ERROR));
+            messagingTemplate.convertAndSend("/sub/error-message/" +chatRoomMessage.getSenderId(), new ChatStatusResponse(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }
 }

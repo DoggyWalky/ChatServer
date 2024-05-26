@@ -57,7 +57,7 @@ public class ChatService {
     public void sendChatMessage(ChatMessage message) throws ApplicationException {
 
         // Todo: 예외 발생 시 어떻게 클라이언트에게 전달해줄 지 결정해야한다.
-        if (message.getType() == ChatMessage.Type.TALK) {
+//        if (message.getType() == ChatMessage.Type.TALK) {
             // 메시지 저장
             Member member = memberRepository.findByMemberId(message.getMemberId()).orElseThrow(
                     () -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
@@ -93,8 +93,7 @@ public class ChatService {
 
             // 레디스 구독자들에게 메시지 publish
             redisTemplate.convertAndSend(chatMessageTopic.getTopic(), new RedisChatMessage(message.getRoomId(),opponentMember.getId(),new ChatMessageResponse(chat)));
-
-        }
+//        }
 
     }
 
@@ -273,11 +272,11 @@ public class ChatService {
 
         // 삭제 된 이후 클라이언트에게 알려 메시지 삭제자는 채팅방 목록을, 상대방은 채팅방 목록과 채팅 목록 모두 갱신시켜줘야한다
         // 메시지 삭제자 갱신
-        messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+memberId,new ChatStatusResponse(ResponseCode.OK));
+        messagingTemplate.convertAndSend("/sub/chat-room/renew/"+memberId,new ChatStatusResponse(ResponseCode.OK));
 
 
         // 상대방 갱신
-        messagingTemplate.convertAndSend("/sub/chatRoom/renew/"+opponentId,new ChatStatusResponse(ResponseCode.OK));
+        messagingTemplate.convertAndSend("/sub/chat-room/renew/"+opponentId,new ChatStatusResponse(ResponseCode.OK));
         messagingTemplate.convertAndSend("/sub/chat/renew/"+opponentId,new ChatStatusResponse(ResponseCode.OK));
     }
 

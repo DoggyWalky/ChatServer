@@ -60,9 +60,8 @@ public class SecurityConfig {
         // 로그인 API, 회원가입 API는 토큰이 없는 상태에서 요청이 들어오기 때문에 모두 permitAll 설정을 한다.
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.GET,"/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/auth/**").permitAll()
                         .requestMatchers("/ws-stomp/**").permitAll()
-//                        .requestMatchers("/chat/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET,"/**.css", "/**.js", "/**.png").permitAll()
                         .anyRequest().authenticated());

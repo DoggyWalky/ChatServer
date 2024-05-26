@@ -127,6 +127,7 @@ public class StompHandler implements ChannelInterceptor {
 
     public boolean validAuthenticate(StompHeaderAccessor accessor) {
         String token = accessor.getFirstNativeHeader(ConstantPool.AUTHORIZATION_HEADER);
+        System.out.println("token :" +token);
         String jwt = resolveToken(token);
 
         if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
