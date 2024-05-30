@@ -10,22 +10,21 @@ import com.chatServer.security.redis.RedisService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
-import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -42,9 +41,20 @@ public class StompHandler implements ChannelInterceptor {
 
     private final ObjectMapper objectMapper;
 
+    private SimpMessagingTemplate messagingTemplate;
+
+    private final ApplicationContext applicationContext;
+
+    private SimpMessagingTemplate getMessagingTemplate() {
+        if (messagingTemplate == null) {
+            messagingTemplate = applicationContext.getBean(SimpMessagingTemplate.class);
+        }
+        return messagingTemplate;
+    }
 
 
-    // websocket을 통해 들어온 요청이 처리 되기전 실행된다.
+
+    // Websocket을 통해 들어온 요청이 처리 되기전 실행된다.
     // preSend 메서드는 메시지가 채널을 통해 실제로 전송되기 전에 호출된다.
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -61,11 +71,16 @@ public class StompHandler implements ChannelInterceptor {
                 if (renewToken != null) {
                     try {
                         String jsonErrorResponse = objectMapper.writeValueAsString(errorResponse);
-                        SimpMessageHeaderAccessor errorAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
-                        errorAccessor.setSessionId(accessor.getSessionId());
-                        errorAccessor.setLeaveMutable(true);
-                        errorAccessor.setHeader(ConstantPool.AUTHORIZATION_HEADER, renewToken);
-                        return MessageBuilder.createMessage(jsonErrorResponse.getBytes(), errorAccessor.getMessageHeaders());
+                        String destination = "/queue/authorization-error";
+
+                        // 헤더 설정
+                        SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
+                        headerAccessor.setSessionId(accessor.getSessionId());
+                        headerAccessor.setLeaveMutable(true);
+                        headerAccessor.setHeader(ConstantPool.AUTHORIZATION_HEADER, renewToken);
+
+                        messagingTemplate.convertAndSendToUser(accessor.getSessionId(),destination,jsonErrorResponse,headerAccessor.getMessageHeaders());
+                        return null;
                     } catch (Exception e) {
                         e.printStackTrace();
                         return null;
@@ -73,10 +88,11 @@ public class StompHandler implements ChannelInterceptor {
                 } else {
                     try {
                         String jsonErrorResponse = objectMapper.writeValueAsString(errorResponse);
-                        SimpMessageHeaderAccessor errorAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
-                        errorAccessor.setSessionId(accessor.getSessionId());
-                        errorAccessor.setLeaveMutable(true);
-                        return MessageBuilder.createMessage(jsonErrorResponse.getBytes(), errorAccessor.getMessageHeaders());
+                        String sessionId = accessor.getSessionId();
+                        String destination = "/queue/authorization-error";
+
+                        messagingTemplate.convertAndSendToUser(sessionId, destination, jsonErrorResponse);
+                        return null;
                     } catch (Exception e) {
                         e.printStackTrace();
                         return null;
@@ -90,28 +106,8 @@ public class StompHandler implements ChannelInterceptor {
             log.info("StompHandler Send 도착");
         } else if (StompCommand.SUBSCRIBE == accessor.getCommand()) {
             log.info("SUBSCRIBE");
-            System.out.println("message: ");
-            System.out.println(message);
-            // header정보에서 구독 destination정보를 얻고, roomId를 추출한다.
-//            String roomId = chatService.getRoomId(Optional.ofNullable((String) message.getHeaders().get("simpDestination")).orElse("InvalidRoomId"));
-            // 채팅방에 들어온 클라이언트 sessionId를 roomId와 맵핑해 놓는다.(나중에 특정 세션이 어떤 채팅방에 들어가 있는지 알기 위함)
-            String sessionId = (String) message.getHeaders().get("simpSessionId");
-
-            // 클라이언트 입장 메시지를 채팅방에 발송한다.(redis publish)
-            String name = Optional.ofNullable((Principal) message.getHeaders().get("simpUser")).map(Principal::getName).orElse("UnknownUser");
-
-//            log.info("SUBSCRIBED {}, {}", name, roomId);
         } else if (StompCommand.DISCONNECT == accessor.getCommand()) {
-            // 연결이 종료된 클라이언트 sesssionId로 채팅방 id를 얻는다.
-            String sessionId = (String) message.getHeaders().get("simpSessionId");
-
-            ;
-            // 클라이언트 퇴장 메시지를 채팅방에 발송한다.(redis publish)
-            String name = Optional.ofNullable((Principal) message.getHeaders().get("simpUser")).map(Principal::getName).orElse("UnknownUser");
-//            chatService.sendChatMessage(ChatMessage.builder().type(ChatMessage.MessageType.QUIT).roomId(roomId).sender(name).build());
-            // 퇴장한 클라이언트의 roomId 맵핑 정보를 삭제한다.
-
-//            log.info("DISCONNECTED {}, {}", sessionId, roomId);
+            log.info("DISCONNECT");
         }
 
 

@@ -56,8 +56,6 @@ public class ChatService {
      */
     public void sendChatMessage(ChatMessage message) throws ApplicationException {
 
-        // Todo: 예외 발생 시 어떻게 클라이언트에게 전달해줄 지 결정해야한다.
-//        if (message.getType() == ChatMessage.Type.TALK) {
             // 메시지 저장
             Member member = memberRepository.findByMemberId(message.getMemberId()).orElseThrow(
                     () -> new ApplicationException(ErrorCode.USER_NOT_FOUND));
@@ -76,7 +74,7 @@ public class ChatService {
             // 상대방이 현재 채팅방에 접속했는지 확인 후 접속시엔 읽음처리
             String connectedRoomId= redisService.getChatUserRoomId(opponentMember.getId());
             if (connectedRoomId!=null && connectedRoomId.equals(message.getRoomId().toString())) {
-                System.out.println("상대방이 현재 채팅방에 접속 중이다");
+                System.out.println("상대방이 현재 채팅방에 접속 중입니다.");
                 System.out.println(redisService.getChatUserRoomId(opponentMember.getId()));
                 chat = Chat.createTalkMessage(member,room, message.getMessage(), true);
             } else {
@@ -93,7 +91,6 @@ public class ChatService {
 
             // 레디스 구독자들에게 메시지 publish
             redisTemplate.convertAndSend(chatMessageTopic.getTopic(), new RedisChatMessage(message.getRoomId(),opponentMember.getId(),new ChatMessageResponse(chat)));
-//        }
 
     }
 
