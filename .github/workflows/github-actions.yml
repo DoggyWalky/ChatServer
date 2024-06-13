@@ -83,7 +83,7 @@ jobs:
         # 경로검사
       - name: Check copied files
         run: |
-          cd /home/runner/work/chatServer/chatServer
+          find . -name "docs"
           ls -la src/main/resources/static/docs
       
 
@@ -92,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: docs
-          path: /home/runner/work/chatServer/chatServer/src/main/resources/static/docs
+          path: src/main/resources/static/docs
 
       # docker build & push to production
       - name: Docker build & push to prod
