@@ -1,0 +1,48 @@
+server:
+  port: 8081
+spring:
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  main:
+    allow-circular-references: true
+    database: mysql
+
+
+  datasource:
+    url: ENC(ve8nX3UyUztK39L1bwLNSNpSIUFU6hijhPp/nLchG1bz/R0xWo65JMW1Q61dPzMlZHHItkFOq2jqunsAb1IQKDr8WOqKXArwbQjwhZmW1r/5rSMNLfgVG5Vqp0EG75Obujt+eMcMng4=)
+    username: ENC(CRtDDOYA5iA58jbdUQN+Zw==)
+    password: ENC(iuvYDPplQkEgB7ckTufyCRrmSDHBeOma)
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ENC(oIZ4bIZiFdpQI13RUDd0Fw==)
+jwt:
+  secret: ENC(bFw/rS0aB/ppcvo42Xp8Ge0k6LGmBjLcv6dCbNDoEUFH0KWoekU7ph2R0ZN40IrUHnRikMXVHbtFs68mCaOzEs5SaTUYookBlVX6rBo38mYrccD/xRvUgZfT/PHa8XKRPJdylznzelPL7tJSdwaT+lQpEmV8HGDTHtkUVBLSVdYBqa62gpnVtg==)
+  token-validity-in-seconds: 2592000  # 60 * 15 15? -> ?
+  refresh-token-validity-in-seconds: 2592000 #1209600 # 60 * 60 * 24 * 30 30? -> ?
+
+
+logging:
+  level:
+    root: INFO
+    org:
+      springframework:
+        web:
+          socket: DEBUG
+        security: DEBUG
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
+    p6spy: DEBUG
+
+
+## p6spy query logging
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+
