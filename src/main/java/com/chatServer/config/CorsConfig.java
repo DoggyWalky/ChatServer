@@ -8,6 +8,9 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
+import static com.chatServer.constant.ConstantPool.FRONT_LOCAL_HOST;
+import static com.chatServer.constant.ConstantPool.FRONT_SERVER_HOST;
+
 
 @Configuration
 public class CorsConfig {
@@ -18,7 +21,7 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.addAllowedOriginPattern("*");
-//        config.setAllowedOrigins(List.of("*",FRONT_SERVER_HOST, FRONT_LOCAL_HOST));
+        config.setAllowedOrigins(List.of("*",FRONT_SERVER_HOST, FRONT_LOCAL_HOST));
         config.setExposedHeaders(List.of("Authorization", "Refresh"));
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");

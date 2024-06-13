@@ -1,0 +1,104 @@
+# github repository actions 페이지에 나타날 이름
+name: CI/CD using github actions & docker
+
+# event trigger
+# main이나 develop 브랜치에 push가 되었을 때 실행
+on:
+  push:
+    branches: [ "main"]
+
+permissions:
+  contents: read
+
+jobs:
+  CI-CD:
+    runs-on: ubuntu-latest
+    steps:
+
+      # JDK setting - github actions에서 사용할 JDK 설정 (프로젝트나 AWS의 java 버전과 달라도 무방)
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # gradle caching - 빌드 시간 향상
+      - name: Gradle Caching
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Print working directory
+        run: pwd
+
+      - name: List files in the repository
+        run: ls -la
+
+
+      # gradle build
+      - name: Build Test with Gradle
+        env:
+          JAVA_TOOL_OPTIONS: "-Djasypt.encryptor.password=${{ secrets.JASYPT_PASSWORD }} -Dcom.amazonaws.sdk.disableEc2Metadata=true"
+        run: ./gradlew clean build --info
+
+      - name: Upload test results
+        if: always() # 항상 아티팩트를 업로드하도록 설정
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: build/reports/tests/test
+
+
+      #      # asciidoctor 실행!
+      #      - name: Generate REST Docs
+      #        env:
+      #          JAVA_TOOL_OPTIONS: "-Djasypt.encryptor.password=${{ secrets.JASYPT_PASSWORD }} -Dcom.amazonaws.sdk.disableEc2Metadata=true"
+      #        run: ./gradlew asciidoctor
+
+      - name: Check build/docs/asciidoc directory
+        run: ls -la build/docs/asciidoc
+
+        # 경로검사
+      - name: Check copied files
+        run: |
+          cd /home/runner/work/chatServer/chatServer
+          ls -la src/main/resources/static/docs
+      
+
+      # docs 로그 출력
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs
+          path: /home/runner/work/chatServer/chatServer/src/main/resources/static/docs
+
+      # docker build & push to production
+      - name: Docker build & push to prod
+        if: contains(github.ref, 'main')
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -f Dockerfile --build-arg JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} -t ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest
+
+      # deploy to production
+      - name: Deploy to prod
+        uses: appleboy/ssh-action@master
+        id: deploy-prod
+        if: contains(github.ref, 'main')
+        with:
+          host: ${{ secrets.HOST_PROD }} # EC2 퍼블릭 IPv4 DNS
+          username: ubuntu
+          key: ${{ secrets.PRIVATE_KEY }}
+          envs: GITHUB_SHA
+          script: |
+            sudo docker ps -q --filter "name=doggywalky-chat" | grep -q . && sudo docker stop doggywalky-chat && sudo docker rm doggywalky-chat || true
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest
+            sudo docker run -d -p 8081:8081 --name doggywalky-chat -e JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} -e DISABLE_EC2_METADATA=${{ secrets.DISABLE_EC2_METADATA }} ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest
+            sudo docker image prune -f
+

@@ -62,6 +62,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET,"/api/auth/**").permitAll()
                         .requestMatchers("/ws-stomp/**").permitAll()
+                        .requestMatchers("/docs/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET,"/**.css", "/**.js", "/**.png").permitAll()
                         .anyRequest().authenticated());

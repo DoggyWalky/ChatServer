@@ -2,6 +2,8 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.2.3'
 	id 'io.spring.dependency-management' version '1.1.4'
+	// spring-rest-docs 추가
+	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 }
 
 group = 'com'
@@ -15,6 +17,13 @@ configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
+	// spring-rest-docs 추가
+	asciidoctorExt
+}
+
+// spring-rest-docs 추가
+ext {
+	set('snippetsDir', file("build/generated-snippets"))
 }
 
 repositories {
@@ -41,8 +50,57 @@ dependencies {
 	runtimeOnly    'io.jsonwebtoken:jjwt-jackson:0.11.5'
 	// Redisson
 	implementation 'org.redisson:redisson-spring-boot-starter:3.16.0'
+	// spring-rest-docs 추가
+	asciidoctorExt 'org.springframework.restdocs:spring-restdocs-asciidoctor'
+	testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
 }
 
+// spring-rest-docs 추가
 tasks.named('test') {
+	outputs.dir snippetsDir
 	useJUnitPlatform()
+	finalizedBy asciidoctor
+}
+// spring-rest-docs 추가
+tasks.named('asciidoctor') {
+	dependsOn test
+	configurations 'asciidoctorExt'
+	inputs.dir snippetsDir
+	inputs.dir file('src/docs/asciidoc')
+	doFirst {
+		delete file('build/docs/asciidoc')
+	}
+	doLast {
+		println "Generated documentation files:"
+		fileTree('build/docs/asciidoc').visit { println it }
+	}
+	finalizedBy copyDocument
+}
+// spring-rest-docs 추가
+task copyDocument(type: Copy) {
+	dependsOn asciidoctor
+	from file('build/docs/asciidoc')
+	into file('src/main/resources/static/docs')
+	doFirst {
+		println "Current working directory: ${new File('.').absolutePath}"
+		println "Copying documentation files from 'build/docs/asciidoc' to 'src/main/resources/static/docs'"
+		file('src/main/resources/static/docs').mkdirs()
+	}
+	doLast {
+		println "Copied documentation files:"
+		fileTree('src/main/resources/static/docs').visit { println it }
+	}
+}
+
+// spring-rest-docs 추가
+task cleanRestDocs(type: Delete) {
+	delete file('src/main/resources/static/docs')
+}
+
+bootJar {
+	dependsOn cleanRestDocs
+	dependsOn copyDocument
+	from("${asciidoctor.outputDir}") {
+		into 'static/docs'
+	}
 }
