@@ -1,0 +1,62 @@
+= DoggyWalky Chat Server API Documentation
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:toc: left
+:toclevels: 2
+
+== 채팅 관련 API
+
+=== 채팅방 목록 조회하기
+
+==== 요청
+
+include::{snippets}/chat-controller-test/getchatroomlist_200/http-request.adoc[]
+
+==== 요청 필드
+
+
+==== 응답
+
+include::{snippets}/chat-controller-test/getchatroomlist_200/http-response.adoc[]
+
+==== 응답 필드
+
+include::{snippets}/chat-controller-test/getchatroomlist_200/response-fields.adoc[]
+
+'''
+
+=== 채팅 메시지 목록 조회하기
+
+==== 요청
+
+include::{snippets}/chat-controller-test/getchatmessagelist_200/http-request.adoc[]
+
+==== 요청 필드
+
+
+==== 응답
+
+include::{snippets}/chat-controller-test/getchatmessagelist_200/http-response.adoc[]
+
+==== 응답 필드
+
+include::{snippets}/chat-controller-test/getchatmessagelist_200/response-fields.adoc[]
+
+'''
+
+=== 채팅 메시지 삭제하기
+
+==== 요청
+
+include::{snippets}/chat-controller-test/deletechat_200/http-request.adoc[]
+
+==== 요청 필드
+
+==== 응답
+
+include::{snippets}/chat-controller-test/deletechat_200/http-response.adoc[]
+
+==== 응답 필드
+
+include::{snippets}/chat-controller-test/deletechat_200/response-fields.adoc[]

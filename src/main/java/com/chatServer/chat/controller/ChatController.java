@@ -17,6 +17,8 @@ import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -58,7 +60,6 @@ public class ChatController {
     @GetMapping("/chat/rooms")
     public ResponseEntity<List<ChatRoomResponse>> getRoomList(Principal principal) {
         Long memberId = Long.parseLong(principal.getName());
-
         List<ChatRoomResponse> roomList = chatService.getRoomList(memberId);
         return new ResponseEntity<>(roomList,HttpStatus.OK);
     }
