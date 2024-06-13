@@ -115,6 +115,6 @@ jobs:
           script: |
             sudo docker ps -q --filter "name=doggywalky-chat" | grep -q . && sudo docker stop doggywalky-chat && sudo docker rm doggywalky-chat || true
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest
-            sudo docker run -d --network host -p 8081:8081 --name doggywalky-chat -e JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} -e DISABLE_EC2_METADATA=${{ secrets.DISABLE_EC2_METADATA }} ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest
+            sudo docker run -d --network host -p --name doggywalky-chat -e JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} -e DISABLE_EC2_METADATA=${{ secrets.DISABLE_EC2_METADATA }} ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest
             sudo docker image prune -f
 
