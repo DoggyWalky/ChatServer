@@ -13,12 +13,6 @@ permissions:
 jobs:
   CI-CD:
     runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis
-        ports:
-          - 6379:6379
-
     steps:
       # JDK setting - github actions에서 사용할 JDK 설정 (프로젝트나 AWS의 java 버전과 달라도 무방)
       - uses: actions/checkout@v3
@@ -42,6 +36,19 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: Create redis.conf
+        run: |
+          echo "requirepass ${{ secrets.REDIS_PASSWORD }}" > redis.conf
+          cat redis.conf
+
+      - name: Start Redis
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y redis-server
+          sudo mv redis.conf /etc/redis/redis.conf
+          sudo systemctl restart redis-server
+          sudo systemctl status redis-server
 
       - name: Print working directory
         run: pwd
