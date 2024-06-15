@@ -102,7 +102,7 @@ jobs:
           docker build -f Dockerfile --build-arg JASYPT_PASSWORD=${{ secrets.JASYPT_PASSWORD }} -t ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/docker-doggywalky-chat:latest
 
-      # deploy to production!
+      # deploy to production!!
       - name: Deploy to prod
         uses: appleboy/ssh-action@master
         id: deploy-prod
